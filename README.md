@@ -13,7 +13,7 @@ To build and run the test do the following
 
 	mvn assembly:single
 
-	java -jar target/jdg-perftest-client-jar-with-dependencies.jar 4 10 100 10
+	java -Xms1303m -Xmx1303m -jar target/jdg-perftest-client-jar-with-dependencies.jar 4 10 100 10
 
 
 The parameters is

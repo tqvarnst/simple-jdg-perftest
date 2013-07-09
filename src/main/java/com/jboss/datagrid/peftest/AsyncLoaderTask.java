@@ -49,14 +49,15 @@ public final class AsyncLoaderTask implements Runnable {
 		
 		final long startTime = System.currentTimeMillis();
 		for (int i = 0; i < entryCount; i++) {
-			cache.putAsync(key++, value);
+			cache.put(key++, value);
 			Thread.sleep(sleepTime);
 		}
 		final long endTime = System.currentTimeMillis();
 		
+		double totalExecTime = (Double.valueOf(endTime)-Double.valueOf(startTime))/1000.0;
 		remoteCacheManager.stop();
 		
-		System.out.println("Task '" + name + "' took " + ((endTime-startTime)/1000) + " seconds to write " + entryCount + " entries "
+		System.out.println("Task '" + name + "' took " + totalExecTime + " seconds to write " + entryCount + " entries "
 				+ " of total size " + entryCount * valueSize + " with ");
 	}
 }

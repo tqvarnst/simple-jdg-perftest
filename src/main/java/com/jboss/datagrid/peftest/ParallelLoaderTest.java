@@ -52,8 +52,11 @@ public class ParallelLoaderTest  {
 		
 		executor.shutdownNow();
 		System.out.println("done with test...");
-		String resultStr = "It took %,.0f seconds to run all threads and the total through put was %.2f MB/sec";
-		double totalExecTime = (endTime-startTime)/1000;
-		System.out.println(String.format(resultStr, totalExecTime, loaderCount*entriesPerThread*valueSize/1024/1024/totalExecTime));
+		
+		double totalExecTime = (Double.valueOf(endTime)-Double.valueOf(startTime))/1000.0;
+		double throughPut = Double.valueOf(loaderCount*entriesPerThread*valueSize)/1024/1024/totalExecTime;
+		
+		String resultStr = "It took %,.4f seconds to run all threads and the total through put was %.2f MB/sec";
+		System.out.println(String.format(resultStr, totalExecTime, throughPut));
 	}
 }
