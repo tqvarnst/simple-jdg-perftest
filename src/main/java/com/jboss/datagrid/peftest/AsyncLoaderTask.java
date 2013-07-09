@@ -1,6 +1,9 @@
 package com.jboss.datagrid.peftest;
 
 
+import java.io.IOException;
+import java.util.Properties;
+
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 
@@ -20,7 +23,7 @@ public final class AsyncLoaderTask implements Runnable {
 	
 	
 	public AsyncLoaderTask(String name, long startKey, int entryCount,
-			int valueSize, long sleepTime) {
+			int valueSize, long sleepTime) throws IOException {
 		super();
 		this.name = name;
 		this.startKey = startKey;
@@ -28,7 +31,9 @@ public final class AsyncLoaderTask implements Runnable {
 		this.valueSize = valueSize;
 		this.sleepTime = sleepTime;
 		value = new byte[valueSize];
-		remoteCacheManager = new RemoteCacheManager("localhost", 11222);
+		Properties hotrodProps = new Properties();
+		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
+		remoteCacheManager = new RemoteCacheManager(hotrodProps);
 		cache = remoteCacheManager.getCache("HotRodcache");
 	}
 
