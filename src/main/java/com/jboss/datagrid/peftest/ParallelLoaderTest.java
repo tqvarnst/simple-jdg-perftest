@@ -2,9 +2,12 @@ package com.jboss.datagrid.peftest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import org.infinispan.client.hotrod.RemoteCacheManager;
 
 
 public class ParallelLoaderTest  {
@@ -26,12 +29,17 @@ public class ParallelLoaderTest  {
 		entriesPerThread = Integer.valueOf(args[1]);
 		valueSize = Integer.valueOf(args[2]);
 		sleepTime = Long.parseLong(args[3]);
+		Properties hotrodProps = new Properties();
+		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
+		RemoteCacheManager remoteCacheManager = new RemoteCacheManager(hotrodProps);
+		
+		
 		
 		executor = Executors.newFixedThreadPool(loaderCount);
 		List<Runnable> tasks = new ArrayList<Runnable>();
 		long startKey = 0;
 		for (int i = 0; i < loaderCount; i++) {
-			tasks.add(new AsyncLoaderTask(String.valueOf(i), 
+			tasks.add(new AsyncLoaderTask(remoteCacheManager, String.valueOf(i), 
 					startKey, 
 					entriesPerThread, 
 					valueSize, 
@@ -49,6 +57,8 @@ public class ParallelLoaderTest  {
 			future.get();
 		}
 		long endTime = System.currentTimeMillis();
+		
+		remoteCacheManager.stop();
 		
 		executor.shutdownNow();
 		System.out.println("done with test...");

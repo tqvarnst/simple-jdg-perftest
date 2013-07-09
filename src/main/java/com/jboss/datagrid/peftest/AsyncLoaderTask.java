@@ -22,7 +22,7 @@ public final class AsyncLoaderTask implements Runnable {
 	private long key;
 	
 	
-	public AsyncLoaderTask(String name, long startKey, int entryCount,
+	public AsyncLoaderTask(RemoteCacheManager remoteCacheManager, String name, long startKey, int entryCount,
 			int valueSize, long sleepTime) throws IOException {
 		super();
 		this.name = name;
@@ -31,9 +31,9 @@ public final class AsyncLoaderTask implements Runnable {
 		this.valueSize = valueSize;
 		this.sleepTime = sleepTime;
 		value = new byte[valueSize];
-		Properties hotrodProps = new Properties();
-		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
-		remoteCacheManager = new RemoteCacheManager(hotrodProps);
+//		Properties hotrodProps = new Properties();
+//		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
+		this.remoteCacheManager = remoteCacheManager;
 		cache = remoteCacheManager.getCache("HotRodcache");
 	}
 
@@ -60,7 +60,7 @@ public final class AsyncLoaderTask implements Runnable {
 		final long endTime = System.currentTimeMillis();
 		
 		double totalExecTime = (Double.valueOf(endTime)-Double.valueOf(startTime))/1000.0;
-		remoteCacheManager.stop();
+		//remoteCacheManager.stop();
 		
 		System.out.println("Task '" + name + "' took " + totalExecTime + " seconds to write " + entryCount + " entries "
 				+ " of total size " + entryCount * valueSize + " with ");
