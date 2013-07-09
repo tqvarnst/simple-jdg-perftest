@@ -9,7 +9,7 @@ To build and run the test do the following
 
 	mvn assembly:single
 
-	java -jar target/simple-jdg-perftest.jar 4 100 4096 10
+	java -jar target/jdg-perftest-client-jar-with-dependencies.jar 4 10 100 10
 
 
 The parameters is
