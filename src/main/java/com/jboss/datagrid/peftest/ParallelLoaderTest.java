@@ -66,7 +66,7 @@ public class ParallelLoaderTest  {
 		double totalExecTime = (Double.valueOf(endTime)-Double.valueOf(startTime))/1000.0;
 		double throughPut = Double.valueOf(loaderCount*entriesPerThread*valueSize)/1024/1024/totalExecTime;
 		double waitTime = Double.valueOf(entriesPerThread)*Double.valueOf(sleepTime);
-		double throughPutWithoutWait = Double.valueOf(loaderCount*entriesPerThread*valueSize)/1024/1024/(totalExecTime-waitTime/1000);
+		double throughPutWithoutWait = Double.valueOf(loaderCount*entriesPerThread*valueSize)/1024/1024/(totalExecTime-waitTime/1000/10);
 		
 		
 		String resultStr = "It took %,.4f seconds to run all threads and the total through put was %.2f MB/sec, through put without waittime is %.2f MB/sec";
