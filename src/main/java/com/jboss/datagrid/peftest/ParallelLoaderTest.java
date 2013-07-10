@@ -16,19 +16,21 @@ public class ParallelLoaderTest  {
 	private static int entriesPerThread;
 	private static int valueSize;
 	private static long sleepTime;
+	private static long sleepInterval;
 	
 	private static ExecutorService executor;
 	
 	
 	public static void main(String[] args) throws Exception {
-		if(args.length != 4) {
-			System.out.println("Usage: java -jar infinispan-client.jar [number of thread] [entries] [entry size] [sleep time between entries]");
+		if(args.length != 5) {
+			System.out.println("Usage: java -jar infinispan-client.jar [number of thread] [entries] [entry size] [sleep time between entries] [sleep every N entires]");
 			return;
 		}
 		loaderCount = Integer.valueOf(args[0]);
 		entriesPerThread = Integer.valueOf(args[1]);
 		valueSize = Integer.valueOf(args[2]);
 		sleepTime = Long.parseLong(args[3]);
+		sleepInterval = Long.parseLong(args[4]);
 		Properties hotrodProps = new Properties();
 		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
 		RemoteCacheManager remoteCacheManager = new RemoteCacheManager(hotrodProps);
@@ -43,7 +45,7 @@ public class ParallelLoaderTest  {
 					startKey, 
 					entriesPerThread, 
 					valueSize, 
-					sleepTime));
+					sleepTime, sleepInterval));
 			startKey += entriesPerThread;
 		}
 		
@@ -64,9 +66,9 @@ public class ParallelLoaderTest  {
 		System.out.println("done with test...");
 		
 		double totalExecTime = (Double.valueOf(endTime)-Double.valueOf(startTime))/1000.0;
-		double throughPut = Double.valueOf(loaderCount*entriesPerThread*valueSize)/1024/1024/totalExecTime;
-		double waitTime = Double.valueOf(entriesPerThread)*Double.valueOf(sleepTime);
-		double throughPutWithoutWait = Double.valueOf(loaderCount*entriesPerThread*valueSize)/1024/1024/(totalExecTime-waitTime/1000/10);
+		double throughPut = Double.valueOf(loaderCount*entriesPerThread*valueSize)/(totalExecTime*1024*1024);
+		double waitTime = Double.valueOf(entriesPerThread)*Double.valueOf(sleepTime)/(sleepInterval*1000);
+		double throughPutWithoutWait = Double.valueOf(loaderCount*entriesPerThread*valueSize)/((totalExecTime-waitTime)*1024*1024);
 		
 		
 		String resultStr = "It took %,.4f seconds to run all threads and the total through put was %.2f MB/sec, through put without waittime is %.2f MB/sec";

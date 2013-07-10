@@ -17,6 +17,8 @@ public final class AsyncLoaderTask implements Runnable {
     private final int valueSize;
 
     private long sleepTime;
+    
+    private long sleepInterval;
 
     private final byte[] value;
 
@@ -27,13 +29,14 @@ public final class AsyncLoaderTask implements Runnable {
     private long key;
 
     public AsyncLoaderTask(RemoteCacheManager remoteCacheManager, String name, long startKey, int entryCount,
-            int valueSize, long sleepTime) throws IOException {
+            int valueSize, long sleepTime, long sleepInterval) throws IOException {
         super();
         this.name = name;
         this.startKey = startKey;
         this.entryCount = entryCount;
         this.valueSize = valueSize;
         this.sleepTime = sleepTime;
+        this.sleepInterval = sleepInterval;
         value = new byte[valueSize];
         //		Properties hotrodProps = new Properties();
         //		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
@@ -59,7 +62,7 @@ public final class AsyncLoaderTask implements Runnable {
         for (int i = 0; i < entryCount; i++) {
             cache.put(key++, value);
 
-            if (i % 10 == 0) {
+            if (i % sleepInterval == 0) {
                 Thread.sleep(sleepTime);
             }
         }
