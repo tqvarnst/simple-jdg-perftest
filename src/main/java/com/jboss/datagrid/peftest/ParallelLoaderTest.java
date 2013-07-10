@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
 
 
@@ -44,12 +45,22 @@ public class ParallelLoaderTest  {
 		List<Runnable> tasks = new ArrayList<Runnable>();
 		long startKey = 0;
 		for (int i = 0; i < loaderCount; i++) {
-			tasks.add(new AsyncLoaderTask(remoteCacheManager, String.valueOf(i), 
+			RemoteCache<Long, byte[]> cache = remoteCacheManager.getCache("HotRodcache");
+			if(async) {
+				tasks.add(new ASyncLoaderTask(cache, String.valueOf(i), 
+						startKey, 
+						entriesPerThread, 
+						valueSize, 
+						sleepTime, (int) sleepInterval));
+				startKey += entriesPerThread;
+			} else {
+			tasks.add(new SyncLoaderTask(cache, String.valueOf(i), 
 					startKey, 
 					entriesPerThread, 
 					valueSize, 
-					sleepTime, sleepInterval, async));
+					sleepTime, sleepInterval));
 			startKey += entriesPerThread;
+			}
 		}
 		
 		long startTime = System.currentTimeMillis();
