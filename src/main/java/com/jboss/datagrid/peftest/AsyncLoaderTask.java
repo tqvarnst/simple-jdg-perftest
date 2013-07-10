@@ -1,10 +1,13 @@
 package com.jboss.datagrid.peftest;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.infinispan.client.hotrod.RemoteCache;
 import org.infinispan.client.hotrod.RemoteCacheManager;
+import org.infinispan.util.concurrent.NotifyingFuture;
 
 public final class AsyncLoaderTask implements Runnable {
 
@@ -19,6 +22,8 @@ public final class AsyncLoaderTask implements Runnable {
     private long sleepTime;
     
     private long sleepInterval;
+    
+    private boolean async;
 
     private final byte[] value;
 
@@ -29,7 +34,7 @@ public final class AsyncLoaderTask implements Runnable {
     private long key;
 
     public AsyncLoaderTask(RemoteCacheManager remoteCacheManager, String name, long startKey, int entryCount,
-            int valueSize, long sleepTime, long sleepInterval) throws IOException {
+            int valueSize, long sleepTime, long sleepInterval, boolean async) throws IOException {
         super();
         this.name = name;
         this.startKey = startKey;
@@ -37,6 +42,8 @@ public final class AsyncLoaderTask implements Runnable {
         this.valueSize = valueSize;
         this.sleepTime = sleepTime;
         this.sleepInterval = sleepInterval;
+        this.async = async;
+        
         value = new byte[valueSize];
         //		Properties hotrodProps = new Properties();
         //		hotrodProps.load(Thread.currentThread().getContextClassLoader().getResourceAsStream("hotrod-client.properties"));
@@ -58,16 +65,32 @@ public final class AsyncLoaderTask implements Runnable {
 
         System.out.println("starting task '" + name + "', start key is " + startKey);
 
+        List<NotifyingFuture<?>> futures = new ArrayList<NotifyingFuture<?>>();
+        
         final long startTime = System.currentTimeMillis();
         for (int i = 0; i < entryCount; i++) {
-            cache.put(key++, value);
+        	// Depending on start parameter 6 we will use async put or sync put
+        	if(async) {
+        		 futures.add(cache.putAsync(key++, value));
+        	} else {
+        		cache.put(key++, value);
+        	}
 
+        	// We will sleep the value of start parameter 4 every X message, where X is start parameter 5
             if (i % sleepInterval == 0) {
                 Thread.sleep(sleepTime);
             }
         }
+        
+        //If async we need to wait async calls to finish
+        if(async) {
+        	for(NotifyingFuture<?> future : futures) {
+    			future.get();
+    		}
+        }
+        
         final long endTime = System.currentTimeMillis();
-
+        
         double totalExecTime = (Double.valueOf(endTime) - Double.valueOf(startTime)) / 1000.0;
         //remoteCacheManager.stop();
 
