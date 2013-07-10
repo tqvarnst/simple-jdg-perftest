@@ -62,6 +62,7 @@ public final class AsyncLoaderTask implements Runnable {
 		double totalExecTime = (Double.valueOf(endTime)-Double.valueOf(startTime))/1000.0;
 		//remoteCacheManager.stop();
 		
+		
 		System.out.println("Task '" + name + "' took " + totalExecTime + " seconds to write " + entryCount + " entries "
 				+ " of total size " + entryCount * valueSize + " with ");
 	}
