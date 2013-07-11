@@ -2,19 +2,19 @@
 SCRIPT_DIR=`dirname $(readlink -f $0)`
 pushd $SCRIPT_DIR > /dev/null
 
-TESTNAME=test1
+TESTNAME=test3
 
-let numThreads=4
-let numEntries=0
+let numThreads=10
+let numEntries=5000
 let valueSize=1024
-let sleepTime=5
-let sleepInterval=200
-async=true
+let sleepTime=2
+let sleepInterval=20
+async=false
 
 # input values for the test scenario
-let startvalue=100000
-let increment=100000
-let endvalue=500000
+let startvalue=0
+let increment=5120
+let endvalue=20480
 
 JDG_HOME=/home/tqvarnst/Desktop/jboss-datagrid-server-6.1.0
 
@@ -33,8 +33,12 @@ read continue
  
 let testindex=1
 
-for (( numEntries=$startvalue; numEntries<=$endvalue; numEntries+=$increment ))
+for (( valueSize=$startvalue; valueSize<=$endvalue; valueSize+=$increment ))
 do
+	# Check for NULL Threads corner case
+	if [[ "$valueSize" = "0" ]]; then
+		let valueSize=1024
+	fi
 	# Start the datagrid	
 	taskset -c 0 ${JDG_HOME}/bin/standalone.sh > logs/$TESTNAME/server/out.log 2>&1 &
 	#echo "Starting JDG server"
@@ -47,13 +51,17 @@ do
 	fi 
 	#echo "Server is running with PID $JDG_PID"
 
-	echo -n "$(date +%H:%M:%S) TEST $testindex: entries=$numEntries, took="
+	echo -n "$(date +%H:%M:%S) TEST $testindex: size=$valueSize, took="
 
 	# This command will run the java client and store the output in it's own file, and att the same time extrapolate the run time. To avoid System.err message which is printed as INFO that the cache manager is started 2 is directed to the same file
 	taskset -c 1 java -Xms512m -Xmx512m -jar ../target/jdg-perftest-client-jar-with-dependencies.jar ${numThreads} ${numEntries} ${valueSize} ${sleepTime} ${sleepInterval} ${async} 2>logs/$TESTNAME/client/test${testindex}.out | tee logs/$TESTNAME/client/test${testindex}.out | grep "It took" | awk '{ printf $3 }'
 
 
 	echo "ms, endtime=$(date +%H:%M:%S)"
+
+	if [[ "$valueSize" = "1024" ]]; then
+		let valueSize=0
+	fi	
 	
 	sleep 2
 
