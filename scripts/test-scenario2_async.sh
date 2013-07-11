@@ -4,14 +4,14 @@ SCRIPT_DIR=`dirname ${SCRIPT_PATH}`
 echo ${SCRIPT_DIR}
 pushd $SCRIPT_DIR > /dev/null
 
-TESTNAME=test2
+TESTNAME=test2async
 
 let numThreads=1
 let numEntries=200000
 let valueSize=1024
-let sleepTime=2
-let sleepInterval=20
-async=false
+let sleepTime=100
+let sleepInterval=1000
+async=true
 
 # input values for the test scenario
 let startvalue=0

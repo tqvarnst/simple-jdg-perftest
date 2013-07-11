@@ -4,19 +4,19 @@ SCRIPT_DIR=`dirname ${SCRIPT_PATH}`
 echo ${SCRIPT_DIR}
 pushd $SCRIPT_DIR > /dev/null
 
-TESTNAME=test2
+TESTNAME=test1async
 
-let numThreads=1
-let numEntries=200000
+let numThreads=10
+let numEntries=0
 let valueSize=1024
-let sleepTime=2
-let sleepInterval=20
-async=false
+let sleepTime=50
+let sleepInterval=2000
+async=true
 
 # input values for the test scenario
-let startvalue=0
-let increment=5
-let endvalue=20
+let startvalue=200000
+let increment=200000
+let endvalue=1000000
 
 JDG_HOME=/home/infinispan/jboss-datagrid-server-6.1.0
 JAVA_OPS="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -Xms13030m -Xmx13030m -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/home/infinispan/jdg-client-gc.log"
@@ -43,7 +43,7 @@ SAR_PID=$!
 
 let testindex=1
 
-for (( numThreads=$startvalue; numThreads<=$endvalue; numThreads+=$increment ))
+for (( numEntries=$startvalue; numEntries<=$endvalue; numEntries+=$increment ))
 do
 	# Start the datagrid	
 	taskset -c ${SERVER_CPU_PIN} ${JDG_HOME}/bin/standalone.sh > logs/$TESTNAME/server/out.log 2>&1 &
@@ -57,22 +57,13 @@ do
 	fi 
 	#echo "Server is running with PID $JDG_PID"
 
-	#Special case for Threads where first iteration will have to 1 and not 0
-	if [[ "$numThreads" = "0" ]]; then
-		let numThreads=1
-	fi
-
 	echo -n "$(date +%H:%M:%S) TEST $testindex: entries=$numEntries, took="
 
 	# This command will run the java client and store the output in it's own file, and att the same time extrapolate the run time. To avoid System.err message which is printed as INFO that the cache manager is started 2 is directed to the same file
 	taskset -c ${CLIENT_CPU_PIN} java $JAVA_OPS -jar ${RUNNABLE_CLIENT_JAR} ${numThreads} ${numEntries} ${valueSize} ${sleepTime} ${sleepInterval} ${async} 2>logs/$TESTNAME/client/test${testindex}.out | tee logs/$TESTNAME/client/test${testindex}.out | grep "It took" | awk '{ printf $3 }'
 
-	echo "ms, endtime=$(date +%H:%M:%S)"
 
-	#Reset the special case where numThreads where 0
-	if [[ "$numThreads" = "1" ]]; then
-                let numThreads=0
-        fi	
+	echo "ms, endtime=$(date +%H:%M:%S)"
 	
 	sleep 2
 

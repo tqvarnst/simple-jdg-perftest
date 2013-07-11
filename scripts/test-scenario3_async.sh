@@ -4,19 +4,19 @@ SCRIPT_DIR=`dirname ${SCRIPT_PATH}`
 echo ${SCRIPT_DIR}
 pushd $SCRIPT_DIR > /dev/null
 
-TESTNAME=test2
+TESTNAME=test3async
 
-let numThreads=1
-let numEntries=200000
+let numThreads=10
+let numEntries=50000
 let valueSize=1024
-let sleepTime=2
-let sleepInterval=20
-async=false
+let sleepTime=20
+let sleepInterval=200
+async=true
 
 # input values for the test scenario
 let startvalue=0
-let increment=5
-let endvalue=20
+let increment=5120
+let endvalue=20480
 
 JDG_HOME=/home/infinispan/jboss-datagrid-server-6.1.0
 JAVA_OPS="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -Xms13030m -Xmx13030m -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/home/infinispan/jdg-client-gc.log"
@@ -43,7 +43,7 @@ SAR_PID=$!
 
 let testindex=1
 
-for (( numThreads=$startvalue; numThreads<=$endvalue; numThreads+=$increment ))
+for (( valueSize=$startvalue; valueSize<=$endvalue; valueSize+=$increment ))
 do
 	# Start the datagrid	
 	taskset -c ${SERVER_CPU_PIN} ${JDG_HOME}/bin/standalone.sh > logs/$TESTNAME/server/out.log 2>&1 &
@@ -59,7 +59,7 @@ do
 
 	#Special case for Threads where first iteration will have to 1 and not 0
 	if [[ "$numThreads" = "0" ]]; then
-		let numThreads=1
+		let valueSize=1024
 	fi
 
 	echo -n "$(date +%H:%M:%S) TEST $testindex: entries=$numEntries, took="
@@ -70,8 +70,8 @@ do
 	echo "ms, endtime=$(date +%H:%M:%S)"
 
 	#Reset the special case where numThreads where 0
-	if [[ "$numThreads" = "1" ]]; then
-                let numThreads=0
+	if [[ "$valueSize" = "1024" ]]; then
+                let valueSize=0
         fi	
 	
 	sleep 2

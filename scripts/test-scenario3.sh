@@ -1,11 +1,13 @@
-
-SCRIPT_DIR=`dirname $(readlink -f $0)`
+#!/bin/bash
+SCRIPT_PATH=`readlink -f $0`
+SCRIPT_DIR=`dirname ${SCRIPT_PATH}`
+echo ${SCRIPT_DIR}
 pushd $SCRIPT_DIR > /dev/null
 
 TESTNAME=test3
 
 let numThreads=10
-let numEntries=5000
+let numEntries=50000
 let valueSize=1024
 let sleepTime=2
 let sleepInterval=20
@@ -16,10 +18,14 @@ let startvalue=0
 let increment=5120
 let endvalue=20480
 
-JDG_HOME=/home/tqvarnst/Desktop/jboss-datagrid-server-6.1.0
+JDG_HOME=/home/infinispan/jboss-datagrid-server-6.1.0
+JAVA_OPS="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -Xms13030m -Xmx13030m -verbose:gc -XX:+PrintGCDetails -XX:+PrintGCTimeStamps -Xloggc:/home/infinispan/jdg-client-gc.log"
+RUNNABLE_CLIENT_JAR=jdg-perftest-client-jar-with-dependencies.jar
+SERVER_CPU_PIN=0-3
+CLIENT_CPU_PIN=22-31
 
 #Cleaning out prevois logs
-rm -rf logs
+rm -rf logs/${TESTNAME}
 
 # make sure the initial log directories are created.
 mkdir -p logs/$TESTNAME/cpu
@@ -27,20 +33,20 @@ mkdir -p logs/$TESTNAME/network
 mkdir -p logs/$TESTNAME/server
 mkdir -p logs/$TESTNAME/client
 
-echo "Before staring it's recommended to run 'mpstat -P ALL 2 | tee logs/$TESTNAME/cpu/cpu.out' in another terminal"
-echo -n "Press [ENTER]:"
-read continue
- 
+echo "start CPU monitoring"
+mpstat -P ALL 2 > logs/$TESTNAME/cpu/cpu.out &
+CPU_PID=$!
+
+echo "start SAR monitoring"
+sar -n DEV 2 > logs/$TESTNAME/network/sar.out &
+SAR_PID=$!
+
 let testindex=1
 
 for (( valueSize=$startvalue; valueSize<=$endvalue; valueSize+=$increment ))
 do
-	# Check for NULL Threads corner case
-	if [[ "$valueSize" = "0" ]]; then
-		let valueSize=1024
-	fi
 	# Start the datagrid	
-	taskset -c 0 ${JDG_HOME}/bin/standalone.sh > logs/$TESTNAME/server/out.log 2>&1 &
+	taskset -c ${SERVER_CPU_PIN} ${JDG_HOME}/bin/standalone.sh > logs/$TESTNAME/server/out.log 2>&1 &
 	#echo "Starting JDG server"
 	sleep 5	
 	JDG_PID=`ps -ef | grep Standalone | grep -v grep | awk '{print $2}'`
@@ -51,17 +57,22 @@ do
 	fi 
 	#echo "Server is running with PID $JDG_PID"
 
-	echo -n "$(date +%H:%M:%S) TEST $testindex: size=$valueSize, took="
+	#Special case for Threads where first iteration will have to 1 and not 0
+	if [[ "$numThreads" = "0" ]]; then
+		let valueSize=1024
+	fi
+
+	echo -n "$(date +%H:%M:%S) TEST $testindex: entries=$numEntries, took="
 
 	# This command will run the java client and store the output in it's own file, and att the same time extrapolate the run time. To avoid System.err message which is printed as INFO that the cache manager is started 2 is directed to the same file
-	taskset -c 1 java -Xms512m -Xmx512m -jar ../target/jdg-perftest-client-jar-with-dependencies.jar ${numThreads} ${numEntries} ${valueSize} ${sleepTime} ${sleepInterval} ${async} 2>logs/$TESTNAME/client/test${testindex}.out | tee logs/$TESTNAME/client/test${testindex}.out | grep "It took" | awk '{ printf $3 }'
-
+	taskset -c ${CLIENT_CPU_PIN} java $JAVA_OPS -jar ${RUNNABLE_CLIENT_JAR} ${numThreads} ${numEntries} ${valueSize} ${sleepTime} ${sleepInterval} ${async} 2>logs/$TESTNAME/client/test${testindex}.out | tee logs/$TESTNAME/client/test${testindex}.out | grep "It took" | awk '{ printf $3 }'
 
 	echo "ms, endtime=$(date +%H:%M:%S)"
 
+	#Reset the special case where numThreads where 0
 	if [[ "$valueSize" = "1024" ]]; then
-		let valueSize=0
-	fi	
+                let valueSize=0
+        fi	
 	
 	sleep 2
 
@@ -75,4 +86,7 @@ do
 	fi
 	let testindex++
 done
+
+kill $SAR_PID
+kill $CPU_PID
 popd > /dev/null
