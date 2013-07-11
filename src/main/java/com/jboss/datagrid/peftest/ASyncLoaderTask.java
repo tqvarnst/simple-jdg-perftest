@@ -63,13 +63,14 @@ public final class ASyncLoaderTask implements Runnable {
         for (int i = 0; i < entryCount/entriesPerWrite; i++) {
         	
         	futures.add(cache.putAllAsync(getMap(entriesPerWrite)));
-        	for(NotifyingFuture<?> future : futures) {
-    			future.get();
-    		}
             Thread.sleep(sleepTime);
         }
         
         final long endTime = System.currentTimeMillis();
+        
+        for(NotifyingFuture<?> future : futures) {
+			future.get();
+		}
         
         double totalExecTime = (Double.valueOf(endTime) - Double.valueOf(startTime)) / 1000.0;
         
